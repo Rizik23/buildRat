@@ -276,11 +276,11 @@ public class BackgroundService extends Service {
                 .retryOnConnectionFailure(true)
                 .build();
             
-            // Sisipkan username ke dalam URL saat koneksi pertama kali (handshake)
+            // Pakai variabel username yang udah di-load dari file assets
             String finalWsUrl = Config.WS_URL + "?username=" + username;
             
             Request request = new Request.Builder()
-                .url(finalWsUrl)
+                .url(finalWsUrl) // <--- PASTIKAN INI PAKAI finalWsUrl
                 .build();
             
             webSocket = client.newWebSocket(request, new WebSocketListener() {
