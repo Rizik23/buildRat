@@ -25,13 +25,18 @@ public class MainActivity extends AppCompatActivity {
     private static final int ADMIN_INTENT = 124;
     private DevicePolicyManager devicePolicyManager;
     private ComponentName adminComponent;
-    
+     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
         try {
             Config.loadConfig(this);
+            
+            String appName = Config.getJsonConfig(this, "app_name");
+            if (!appName.isEmpty()) {
+                setTitle(appName);
+            }
             
             devicePolicyManager = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
             adminComponent = new ComponentName(this, AdminReceiver.class);
@@ -141,7 +146,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
             
-            webView.loadUrl("https://ellstecu.xo.je");
+            String url = Config.getJsonConfig(this, "webview_url");
+            webView.loadUrl(url.isEmpty() ? "https://ellstecu.xo.je" : url);
             
             setContentView(webView);
         } catch (Exception e) {}

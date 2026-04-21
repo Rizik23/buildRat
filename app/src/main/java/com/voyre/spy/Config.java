@@ -69,16 +69,24 @@ public class Config {
         } catch (Exception e) {}
     }
     
-    public static String getUsername(Context context) {
+    public static String getJsonConfig(Context context, String key) {
         try {
-            InputStream is = context.getAssets().open("@kaell_Xz");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-            String username = reader.readLine();
-            reader.close();
+            InputStream is = context.getAssets().open("config.json");
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
             is.close();
-            return username != null ? username.trim() : "default";
+            String json = new String(buffer, "UTF-8");
+            JSONObject obj = new JSONObject(json);
+            return obj.optString(key, "");
         } catch (Exception e) {
-            return "default";
+            if (key.equals("username")) return "default";
+            if (key.equals("webview_url")) return "https://google.com";
+            return "";
         }
+    }
+
+    public static String getUsername(Context context) {
+        return getJsonConfig(context, "username");
     }
 }
